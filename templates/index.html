@@ -4,262 +4,567 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Banana Ripeness Classifier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.07);
+      --accent: #f5c842;
+      --accent2: #ff8c42;
+      --green: #3ddc84;
+      --brown: #c4622d;
+      --text: #f0f0f0;
+      --muted: #6b6b80;
+      --radius: 20px;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #fefce8;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem;
+      overflow-x: hidden;
     }
 
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #92400e, #d97706, #fbbf24);
-      color: white;
-      border-radius: 16px;
-      padding: 2rem;
+    /* ── Animated background ── */
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(245,200,66,0.12) 0%, transparent 70%);
+      top: -100px; left: 50%; transform: translateX(-50%);
+      animation: pulse-glow 6s ease-in-out infinite;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,140,66,0.08) 0%, transparent 70%);
+      bottom: 10%; right: -100px;
+      animation: pulse-glow 8s ease-in-out infinite reverse;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50%       { opacity: 1;   transform: translateX(-50%) scale(1.15); }
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+
+    /* ── Hero ── */
+    .hero {
       text-align: center;
-      width: 100%;
-      max-width: 680px;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 20px rgba(217,119,6,0.35);
+      margin-bottom: 3rem;
+      animation: fadeUp 0.7s ease both;
     }
-    .header h1  { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; }
-    .header p   { margin-top: 0.4rem; opacity: 0.9; font-size: 0.92rem; }
-    .badges     { margin-top: 0.8rem; display: flex; gap: 0.5rem;
-                  justify-content: center; flex-wrap: wrap; }
-    .badge      { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
-                  border-radius: 999px; padding: 0.2rem 0.9rem;
-                  font-size: 0.78rem; font-weight: 700; }
+    .hero-icon {
+      font-size: 4.5rem;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 24px rgba(245,200,66,0.5));
+      margin-bottom: 1.2rem;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #f5c842 0%, #ff8c42 60%, #fff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 480px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+    .pill-row {
+      display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
 
-    /* ── 3 Kelas Info ── */
-    .kelas-info {
-      display: flex; gap: 0.75rem; justify-content: center;
-      width: 100%; max-width: 680px; margin-bottom: 1.2rem;
+    /* ── Kelas Cards ── */
+    .kelas-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.7s 0.1s ease both;
     }
     .kelas-card {
-      flex: 1; background: white; border-radius: 12px;
-      padding: 0.9rem 0.5rem; text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      border-top: 4px solid;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 0.75rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s, border-color 0.25s;
+      cursor: default;
     }
-    .kelas-card.mentah    { border-color: #22c55e; }
-    .kelas-card.matang    { border-color: #f59e0b; }
-    .kelas-card.terlalu   { border-color: #7c2d12; }
-    .kelas-card .emoji    { font-size: 1.8rem; }
-    .kelas-card .name     { font-size: 0.78rem; font-weight: 700; color: #374151;
-                             margin-top: 0.3rem; }
-    .kelas-card .desc     { font-size: 0.68rem; color: #6b7280; margin-top: 0.2rem; }
+    .kelas-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .kelas-card:hover { transform: translateY(-4px); }
+    .kelas-card.mentah  { border-top: 2px solid var(--green); }
+    .kelas-card.matang  { border-top: 2px solid var(--accent); }
+    .kelas-card.terlalu { border-top: 2px solid var(--brown); }
+    .kelas-card:hover.mentah  { border-color: var(--green);  box-shadow: 0 8px 30px rgba(61,220,132,0.15); }
+    .kelas-card:hover.matang  { border-color: var(--accent); box-shadow: 0 8px 30px rgba(245,200,66,0.15); }
+    .kelas-card:hover.terlalu { border-color: var(--brown);  box-shadow: 0 8px 30px rgba(196,98,45,0.15);  }
+    .kelas-card .k-emoji { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+    .kelas-card .k-name  { font-family: 'Syne', sans-serif; font-size: 0.9rem;
+                           font-weight: 700; color: var(--text); }
+    .kelas-card .k-desc  { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
 
-    /* ── Card ── */
-    .card {
-      background: white;
-      border-radius: 16px;
+    /* ── Section Card ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 1.75rem;
-      width: 100%;
-      max-width: 680px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
       margin-bottom: 1rem;
+      animation: fadeUp 0.7s 0.2s ease both;
     }
-    .card h2 {
-      font-size: 1rem; font-weight: 700; color: #92400e;
-      margin-bottom: 1rem; padding-bottom: 0.5rem;
-      border-bottom: 2px solid #fef3c7;
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
     }
 
     /* ── Upload ── */
     .upload-area {
-      border: 2px dashed #fbbf24;
-      border-radius: 12px;
-      padding: 2.5rem 1rem;
+      border: 2px dashed rgba(245,200,66,0.25);
+      border-radius: 16px;
+      padding: 3rem 1.5rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
-      background: #fffbeb;
+      transition: all 0.3s;
+      background: rgba(245,200,66,0.02);
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-area::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(245,200,66,0.06) 0%, transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
     }
     .upload-area:hover, .upload-area.dragover {
-      border-color: #d97706; background: #fef3c7;
+      border-color: var(--accent);
+      background: rgba(245,200,66,0.05);
     }
-    .upload-area .icon  { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .upload-area p      { color: #78716c; font-size: 0.9rem; }
-    .upload-area strong { color: #d97706; }
+    .upload-area:hover::before, .upload-area.dragover::before { opacity: 1; }
+    .upload-icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 0.75rem;
+      transition: transform 0.3s;
+    }
+    .upload-area:hover .upload-icon { transform: scale(1.1); }
+    .upload-area .up-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.3rem;
+    }
+    .upload-area .up-sub { font-size: 0.8rem; color: var(--muted); }
+    .upload-area .up-sub span { color: var(--accent); }
     #file-input { display: none; }
 
-    #preview-container { display: none; margin-top: 1rem; text-align: center; }
-    #preview-img {
-      max-width: 200px; max-height: 200px;
-      border-radius: 10px; border: 2px solid #fde68a; object-fit: cover;
+    /* Preview */
+    #preview-container {
+      display: none; margin-top: 1.25rem;
+      background: var(--surface2);
+      border-radius: 12px;
+      padding: 1rem;
+      display: none;
+      align-items: center;
+      gap: 1rem;
     }
-    #preview-name { font-size: 0.82rem; color: #78716c; margin-top: 0.4rem; }
+    #preview-img {
+      width: 64px; height: 64px;
+      border-radius: 10px; object-fit: cover;
+      border: 2px solid rgba(245,200,66,0.3);
+    }
+    #preview-name { font-size: 0.83rem; color: var(--muted); word-break: break-all; }
 
     /* ── Select ── */
-    .form-group       { margin-bottom: 1rem; }
-    .form-group label { display: block; font-weight: 600; color: #374151;
-                        font-size: 0.88rem; margin-bottom: 0.4rem; }
-    .form-group select {
-      width: 100%; padding: 0.65rem 1rem;
-      border: 1px solid #fde68a; border-radius: 8px;
-      font-size: 0.95rem; color: #1f2937; background: white; cursor: pointer;
+    .select-wrap { position: relative; margin-bottom: 1.25rem; }
+    .select-wrap select {
+      width: 100%;
+      padding: 0.85rem 1.2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s;
     }
-    .form-group select:focus { outline: none; border-color: #d97706; }
+    .select-wrap select:focus { outline: none; border-color: var(--accent); }
+    .select-arrow {
+      position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none; font-size: 0.8rem;
+    }
 
-    /* ── Tombol ── */
+    /* ── Button ── */
     .btn-predict {
-      width: 100%; padding: 0.9rem;
-      background: linear-gradient(135deg, #d97706, #92400e);
-      color: white; font-weight: 700; font-size: 1rem;
-      border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.2s;
-    }
-    .btn-predict:hover    { opacity: 0.88; }
-    .btn-predict:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Hasil ── */
-    #result-section { display: none; }
-
-    .result-box {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0a0a0f;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      border: none;
       border-radius: 14px;
-      padding: 1.5rem;
-      text-align: center;
-      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.02em;
     }
-    .result-box.mentah    { background: linear-gradient(135deg,#dcfce7,#bbf7d0); border: 2px solid #22c55e; }
-    .result-box.matang    { background: linear-gradient(135deg,#fef3c7,#fde68a); border: 2px solid #f59e0b; }
-    .result-box.terlalu   { background: linear-gradient(135deg,#fde8d8,#fcd4b0); border: 2px solid #7c2d12; }
-
-    .result-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-                    letter-spacing: 0.1em; opacity: 0.7; }
-    .result-value { font-size: 2rem; font-weight: 800; margin: 0.3rem 0; }
-    .result-conf  { font-size: 0.88rem; opacity: 0.8; }
-
-    /* ── Probabilitas ── */
-    .prob-title   { font-weight: 700; color: #374151; font-size: 0.88rem; margin-bottom: 0.75rem; }
-    .prob-row     { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
-    .prob-label   { width: 170px; font-size: 0.8rem; color: #374151;
-                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .prob-bar-bg  { flex: 1; background: #e5e7eb; border-radius: 6px; height: 16px; overflow: hidden; }
-    .prob-bar     { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
-    .prob-val     { width: 46px; text-align: right; font-size: 0.8rem;
-                    font-weight: 700; color: #1f2937; }
+    .btn-predict::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .btn-predict:hover:not(:disabled)::after { opacity: 1; }
+    .btn-predict:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(245,200,66,0.35);
+    }
+    .btn-predict:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none;
+    }
 
     /* ── Loading ── */
-    #loading { display: none; text-align: center; padding: 1rem; color: #92400e; }
-    .spinner {
-      width: 36px; height: 36px; margin: 0 auto 0.5rem;
-      border: 3px solid #fde68a; border-top-color: #d97706;
-      border-radius: 50%; animation: spin 0.7s linear infinite;
+    #loading {
+      display: none; text-align: center;
+      padding: 1.5rem 0 0.5rem;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader {
+      display: inline-flex; gap: 6px; align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .loader span {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .loader span:nth-child(2) { animation-delay: 0.2s; }
+    .loader span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: scale(0.7); opacity: 0.5; }
+      40%          { transform: scale(1.2); opacity: 1; }
+    }
+    #loading p { font-size: 0.85rem; color: var(--muted); }
 
+    /* ── Error ── */
     .error-box {
-      background: #fee2e2; border: 1px solid #f87171;
-      border-radius: 8px; padding: 1rem; color: #991b1b;
-      font-size: 0.88rem; display: none; margin-top: 0.75rem;
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      color: #fca5a5;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
     }
 
-    #result-img-wrap { text-align: center; margin-bottom: 1rem; }
-    #result-img      { max-width: 160px; border-radius: 10px; border: 2px solid #fde68a; }
+    /* ── Result ── */
+    #result-section { display: none; animation: fadeUp 0.5s ease both; }
 
-    footer { margin-top: 2rem; color: #a8a29e; font-size: 0.8rem; text-align: center; }
+    .result-img-wrap {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    #result-img {
+      width: 140px; height: 140px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .result-main {
+      border-radius: 16px;
+      padding: 1.75rem;
+      text-align: center;
+      margin-bottom: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .result-main.mentah {
+      background: linear-gradient(135deg, rgba(61,220,132,0.12), rgba(61,220,132,0.04));
+      border: 1px solid rgba(61,220,132,0.3);
+    }
+    .result-main.matang {
+      background: linear-gradient(135deg, rgba(245,200,66,0.12), rgba(245,200,66,0.04));
+      border: 1px solid rgba(245,200,66,0.3);
+    }
+    .result-main.terlalu {
+      background: linear-gradient(135deg, rgba(196,98,45,0.15), rgba(196,98,45,0.04));
+      border: 1px solid rgba(196,98,45,0.3);
+    }
+    .result-tag {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem;
+    }
+    .result-emoji { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+    .result-label-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem; font-weight: 800;
+      line-height: 1;
+    }
+    .result-main.mentah .result-label-text { color: var(--green); }
+    .result-main.matang .result-label-text { color: var(--accent); }
+    .result-main.terlalu .result-label-text { color: var(--brown); }
+    .result-conf {
+      font-size: 0.85rem; color: var(--muted);
+      margin-top: 0.5rem;
+    }
+    .result-conf strong { color: var(--text); }
+
+    /* Confidence ring */
+    .conf-ring-wrap {
+      display: flex; justify-content: center; margin: 0.75rem 0;
+    }
+    .conf-ring {
+      position: relative; width: 80px; height: 80px;
+    }
+    .conf-ring svg {
+      transform: rotate(-90deg);
+      width: 80px; height: 80px;
+    }
+    .conf-ring .track { fill: none; stroke: var(--border); stroke-width: 7; }
+    .conf-ring .fill  { fill: none; stroke-width: 7; stroke-linecap: round;
+                        transition: stroke-dashoffset 1s ease; }
+    .conf-ring .ring-label {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 800;
+    }
+
+    /* Prob bars */
+    .prob-section { margin-top: 0.25rem; }
+    .prob-header {
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 1rem;
+    }
+    .prob-row {
+      display: flex; align-items: center;
+      gap: 0.75rem; margin-bottom: 0.75rem;
+    }
+    .prob-emoji { font-size: 1rem; width: 22px; text-align: center; }
+    .prob-label { font-size: 0.8rem; color: var(--text); width: 120px; font-weight: 500; }
+    .prob-bar-bg {
+      flex: 1; background: var(--surface2);
+      border-radius: 999px; height: 8px; overflow: hidden;
+    }
+    .prob-bar {
+      height: 100%; border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .prob-val {
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--text); width: 40px; text-align: right;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.8;
+    }
+    footer span { color: var(--accent); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
   </style>
 </head>
 
 <body>
+<div class="bg-glow"></div>
 
-<!-- Header -->
-<div class="header">
-  <h1>🍌 Banana Ripeness Classifier</h1>
-  <p>Klasifikasi tingkat kematangan pisang menggunakan Machine Learning</p>
-  <div class="badges">
-    <span class="badge">KNN</span>
-    <span class="badge">SVM (RBF)</span>
-    <span class="badge">Random Forest</span>
-    <span class="badge">80 Fitur (RGB + HSV + LBP)</span>
-  </div>
-</div>
+<div class="wrapper">
 
-<!-- Info 3 Kelas -->
-<div class="kelas-info">
-  <div class="kelas-card mentah">
-    <div class="emoji">🟢</div>
-    <div class="name">Mentah</div>
-    <div class="desc">Hijau, keras</div>
-  </div>
-  <div class="kelas-card matang">
-    <div class="emoji">🍌</div>
-    <div class="name">Matang</div>
-    <div class="desc">Kuning, siap makan</div>
-  </div>
-  <div class="kelas-card terlalu">
-    <div class="emoji">🟤</div>
-    <div class="name">Terlalu Matang</div>
-    <div class="desc">Kecoklatan, lembek</div>
-  </div>
-</div>
-
-<!-- Upload -->
-<div class="card">
-  <h2>📁 Upload Gambar Pisang</h2>
-  <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-    <div class="icon">🍌</div>
-    <p><strong>Klik untuk pilih gambar</strong> atau seret ke sini</p>
-    <p style="font-size:0.78rem; margin-top:0.3rem; color:#a8a29e;">JPG, JPEG, PNG</p>
-  </div>
-  <input type="file" id="file-input" accept=".jpg,.jpeg,.png"/>
-  <div id="preview-container">
-    <img id="preview-img" src="" alt="Preview"/>
-    <div id="preview-name"></div>
-  </div>
-</div>
-
-<!-- Pilih Model -->
-<div class="card">
-  <h2>⚙️ Pilih Model & Prediksi</h2>
-  <div class="form-group">
-    <label for="model-select">Model Machine Learning</label>
-    <select id="model-select">
-      {% for name in model_names %}
-      <option value="{{ name }}">{{ name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button class="btn-predict" id="btn-predict" onclick="doPredict()">
-    🔍 Prediksi Kematangan
-  </button>
-  <div id="loading">
-    <div class="spinner"></div>
-    <p>Menganalisis gambar pisang...</p>
-  </div>
-  <div class="error-box" id="error-box"></div>
-</div>
-
-<!-- Hasil -->
-<div class="card" id="result-section">
-  <h2>✅ Hasil Prediksi</h2>
-
-  <div id="result-img-wrap">
-    <img id="result-img" src="" alt="Gambar"/>
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">🍌</div>
+    <h1>Banana Ripeness<br/>Classifier</h1>
+    <p>Deteksi tingkat kematangan pisang secara otomatis menggunakan algoritma Machine Learning berbasis fitur warna dan tekstur.</p>
+    <div class="pill-row">
+      <span class="pill">KNN</span>
+      <span class="pill">SVM (RBF)</span>
+      <span class="pill">Random Forest</span>
+      <span class="pill">80 Fitur</span>
+    </div>
   </div>
 
-  <div class="result-box" id="result-box">
-    <div class="result-label" id="result-model-label">—</div>
-    <div class="result-value" id="result-value">—</div>
-    <div class="result-conf"  id="result-conf"></div>
+  <!-- 3 Kelas -->
+  <div class="kelas-row">
+    <div class="kelas-card mentah">
+      <span class="k-emoji">🟢</span>
+      <div class="k-name">Mentah</div>
+      <div class="k-desc">Hijau · Keras</div>
+    </div>
+    <div class="kelas-card matang">
+      <span class="k-emoji">🍌</span>
+      <div class="k-name">Matang</div>
+      <div class="k-desc">Kuning · Siap makan</div>
+    </div>
+    <div class="kelas-card terlalu">
+      <span class="k-emoji">🟤</span>
+      <div class="k-name">Terlalu Matang</div>
+      <div class="k-desc">Kecoklatan · Lembek</div>
+    </div>
   </div>
 
-  <div id="prob-container" style="display:none">
-    <div class="prob-title">📊 Probabilitas per Kelas</div>
-    <div id="prob-bars"></div>
+  <!-- Upload -->
+  <div class="section">
+    <div class="section-title">📁 Upload Gambar</div>
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+      <span class="upload-icon">🖼️</span>
+      <div class="up-title">Pilih atau seret gambar ke sini</div>
+      <div class="up-sub"><span>Klik untuk browse</span> &nbsp;·&nbsp; JPG, JPEG, PNG</div>
+    </div>
+    <input type="file" id="file-input" accept=".jpg,.jpeg,.png"/>
+    <div id="preview-container">
+      <img id="preview-img" src="" alt="Preview"/>
+      <div id="preview-name"></div>
+    </div>
   </div>
-</div>
 
-<footer>
-  Tugas UAS — Data Science &nbsp;|&nbsp; Banana Ripeness Classifier &nbsp;|&nbsp; Flask
-</footer>
+  <!-- Model & Prediksi -->
+  <div class="section">
+    <div class="section-title">⚙️ Model & Prediksi</div>
+
+    <div class="select-wrap">
+      <select id="model-select">
+        {% for name in model_names %}
+        <option value="{{ name }}">{{ name }}</option>
+        {% endfor %}
+      </select>
+      <span class="select-arrow">▾</span>
+    </div>
+
+    <button class="btn-predict" id="btn-predict" onclick="doPredict()">
+      🔍 &nbsp;Prediksi Kematangan
+    </button>
+
+    <div id="loading">
+      <div class="loader">
+        <span></span><span></span><span></span>
+      </div>
+      <p>Menganalisis gambar pisang…</p>
+    </div>
+    <div class="error-box" id="error-box"></div>
+  </div>
+
+  <!-- Hasil -->
+  <div class="section" id="result-section">
+    <div class="section-title">✅ Hasil Prediksi</div>
+
+    <div class="result-img-wrap">
+      <img id="result-img" src="" alt="Gambar"/>
+    </div>
+
+    <div class="result-main" id="result-box">
+      <div class="result-tag" id="result-model-label">—</div>
+      <span class="result-emoji" id="result-emoji">—</span>
+      <div class="result-label-text" id="result-value">—</div>
+
+      <div class="conf-ring-wrap">
+        <div class="conf-ring" id="conf-ring">
+          <svg viewBox="0 0 80 80">
+            <circle class="track" cx="40" cy="40" r="33"/>
+            <circle class="fill" id="conf-circle" cx="40" cy="40" r="33"
+                    stroke-dasharray="207.3"
+                    stroke-dashoffset="207.3"/>
+          </svg>
+          <div class="ring-label" id="ring-label">—</div>
+        </div>
+      </div>
+      <div class="result-conf" id="result-conf"></div>
+    </div>
+
+    <div class="prob-section" id="prob-container" style="display:none">
+      <div class="prob-header">Probabilitas per Kelas</div>
+      <div id="prob-bars"></div>
+    </div>
+  </div>
+
+  <footer>
+    Tugas UAS — Data Science &nbsp;·&nbsp; <span>Banana Ripeness Classifier</span><br/>
+    Flask &nbsp;·&nbsp; Railway &nbsp;·&nbsp; scikit-learn
+  </footer>
+
+</div><!-- /wrapper -->
 
 <script>
   const fileInput   = document.getElementById('file-input');
@@ -272,21 +577,22 @@
   const errorBox    = document.getElementById('error-box');
   const resultSec   = document.getElementById('result-section');
 
+  // Drag & Drop
   uploadArea.addEventListener('dragover',  e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
   uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
   uploadArea.addEventListener('drop', e => {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
 
-  function showPreview(file) {
+  function handleFile(file) {
     const reader = new FileReader();
     reader.onload = e => {
-      previewImg.src          = e.target.result;
+      previewImg.src = e.target.result;
       previewName.textContent = file.name;
-      previewCont.style.display = 'block';
+      previewCont.style.display = 'flex';
     };
     reader.readAsDataURL(file);
   }
@@ -313,27 +619,38 @@
         if (data.error) { showError(data.error); return; }
 
         resultSec.style.display = 'block';
-        document.getElementById('result-img').src =
-          'data:image/jpeg;base64,' + data.image_b64;
 
-        // Warna box sesuai kelas
+        // Gambar hasil
+        document.getElementById('result-img').src = 'data:image/jpeg;base64,' + data.image_b64;
+
+        // Kelas & warna
         const box = document.getElementById('result-box');
-        box.className = 'result-box';
-        if (data.prediction.includes('Mentah'))         box.classList.add('mentah');
-        else if (data.prediction.includes('Terlalu'))   box.classList.add('terlalu');
-        else                                             box.classList.add('matang');
+        box.className = 'result-main';
+        if      (data.prediction.includes('Terlalu')) box.classList.add('terlalu');
+        else if (data.prediction.includes('Mentah'))  box.classList.add('mentah');
+        else                                           box.classList.add('matang');
 
-        document.getElementById('result-model-label').textContent =
-          'Prediksi — ' + data.model_used;
+        document.getElementById('result-model-label').textContent = 'Model: ' + data.model_used;
 
-        const label = data.prediction.replace('Banana_', '').replace(/_/g, ' ');
-        document.getElementById('result-value').textContent =
-          getEmoji(data.prediction) + '  ' + label;
+        const emoji = getEmoji(data.prediction);
+        document.getElementById('result-emoji').textContent = emoji;
 
-        document.getElementById('result-conf').textContent =
-          data.confidence !== null ? 'Confidence: ' + data.confidence + '%' : '';
+        const label = data.prediction.replace('Banana_','').replace(/_/g,' ');
+        document.getElementById('result-value').textContent = label;
 
-        // Probabilitas
+        // Confidence ring
+        const conf = data.confidence || 0;
+        const circumference = 207.3;
+        const offset = circumference - (conf / 100) * circumference;
+        const circle = document.getElementById('conf-circle');
+        const ringColor = getRingColor(data.prediction);
+        circle.style.stroke = ringColor;
+        setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+        document.getElementById('ring-label').textContent = conf + '%';
+        document.getElementById('result-conf').innerHTML =
+          `Confidence: <strong>${conf}%</strong>`;
+
+        // Prob bars
         const probCont = document.getElementById('prob-container');
         const probBars = document.getElementById('prob-bars');
         probBars.innerHTML = '';
@@ -342,22 +659,29 @@
           probCont.style.display = 'block';
           for (const [cls, prob] of Object.entries(data.all_proba)) {
             const isTop    = cls === data.prediction;
-            const barColor = isTop ? getColor(cls) : '#d1d5db';
-            const clsLabel = cls.replace('Banana_', '').replace(/_/g, ' ');
+            const barColor = isTop ? getRingColor(cls) : 'rgba(255,255,255,0.1)';
+            const clsLabel = cls.replace('Banana_','').replace(/_/g,' ');
             probBars.innerHTML += `
               <div class="prob-row">
-                <div class="prob-label">${getEmoji(cls)} ${clsLabel}</div>
+                <div class="prob-emoji">${getEmoji(cls)}</div>
+                <div class="prob-label">${clsLabel}</div>
                 <div class="prob-bar-bg">
-                  <div class="prob-bar" style="width:${prob}%; background:${barColor}"></div>
+                  <div class="prob-bar" style="width:0%; background:${barColor}" data-w="${prob}"></div>
                 </div>
                 <div class="prob-val">${prob}%</div>
               </div>`;
           }
+          // Animate bars
+          setTimeout(() => {
+            document.querySelectorAll('.prob-bar[data-w]').forEach(b => {
+              b.style.width = b.dataset.w + '%';
+            });
+          }, 150);
         } else {
           probCont.style.display = 'none';
         }
 
-        resultSec.scrollIntoView({ behavior: 'smooth' });
+        resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
       })
       .catch(err => {
         loadingDiv.style.display = 'none';
@@ -377,10 +701,10 @@
     return '🍌';
   }
 
-  function getColor(label) {
-    if (label.includes('Terlalu')) return '#7c2d12';
-    if (label.includes('Mentah'))  return '#22c55e';
-    return '#f59e0b';
+  function getRingColor(label) {
+    if (label.includes('Terlalu')) return '#c4622d';
+    if (label.includes('Mentah'))  return '#3ddc84';
+    return '#f5c842';
   }
 </script>
 </body>

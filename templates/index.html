@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banana Ripeness Classifier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fefce8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #92400e, #d97706, #fbbf24);
+      color: white;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 20px rgba(217,119,6,0.35);
+    }
+    .header h1  { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; }
+    .header p   { margin-top: 0.4rem; opacity: 0.9; font-size: 0.92rem; }
+    .badges     { margin-top: 0.8rem; display: flex; gap: 0.5rem;
+                  justify-content: center; flex-wrap: wrap; }
+    .badge      { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+                  border-radius: 999px; padding: 0.2rem 0.9rem;
+                  font-size: 0.78rem; font-weight: 700; }
+
+    /* ── 3 Kelas Info ── */
+    .kelas-info {
+      display: flex; gap: 0.75rem; justify-content: center;
+      width: 100%; max-width: 680px; margin-bottom: 1.2rem;
+    }
+    .kelas-card {
+      flex: 1; background: white; border-radius: 12px;
+      padding: 0.9rem 0.5rem; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      border-top: 4px solid;
+    }
+    .kelas-card.mentah    { border-color: #22c55e; }
+    .kelas-card.matang    { border-color: #f59e0b; }
+    .kelas-card.terlalu   { border-color: #7c2d12; }
+    .kelas-card .emoji    { font-size: 1.8rem; }
+    .kelas-card .name     { font-size: 0.78rem; font-weight: 700; color: #374151;
+                             margin-top: 0.3rem; }
+    .kelas-card .desc     { font-size: 0.68rem; color: #6b7280; margin-top: 0.2rem; }
+
+    /* ── Card ── */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      font-size: 1rem; font-weight: 700; color: #92400e;
+      margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 2px solid #fef3c7;
+    }
+
+    /* ── Upload ── */
+    .upload-area {
+      border: 2px dashed #fbbf24;
+      border-radius: 12px;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fffbeb;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #d97706; background: #fef3c7;
+    }
+    .upload-area .icon  { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .upload-area p      { color: #78716c; font-size: 0.9rem; }
+    .upload-area strong { color: #d97706; }
+    #file-input { display: none; }
+
+    #preview-container { display: none; margin-top: 1rem; text-align: center; }
+    #preview-img {
+      max-width: 200px; max-height: 200px;
+      border-radius: 10px; border: 2px solid #fde68a; object-fit: cover;
+    }
+    #preview-name { font-size: 0.82rem; color: #78716c; margin-top: 0.4rem; }
+
+    /* ── Select ── */
+    .form-group       { margin-bottom: 1rem; }
+    .form-group label { display: block; font-weight: 600; color: #374151;
+                        font-size: 0.88rem; margin-bottom: 0.4rem; }
+    .form-group select {
+      width: 100%; padding: 0.65rem 1rem;
+      border: 1px solid #fde68a; border-radius: 8px;
+      font-size: 0.95rem; color: #1f2937; background: white; cursor: pointer;
+    }
+    .form-group select:focus { outline: none; border-color: #d97706; }
+
+    /* ── Tombol ── */
+    .btn-predict {
+      width: 100%; padding: 0.9rem;
+      background: linear-gradient(135deg, #d97706, #92400e);
+      color: white; font-weight: 700; font-size: 1rem;
+      border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-predict:hover    { opacity: 0.88; }
+    .btn-predict:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Hasil ── */
+    #result-section { display: none; }
+
+    .result-box {
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .result-box.mentah    { background: linear-gradient(135deg,#dcfce7,#bbf7d0); border: 2px solid #22c55e; }
+    .result-box.matang    { background: linear-gradient(135deg,#fef3c7,#fde68a); border: 2px solid #f59e0b; }
+    .result-box.terlalu   { background: linear-gradient(135deg,#fde8d8,#fcd4b0); border: 2px solid #7c2d12; }
+
+    .result-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+                    letter-spacing: 0.1em; opacity: 0.7; }
+    .result-value { font-size: 2rem; font-weight: 800; margin: 0.3rem 0; }
+    .result-conf  { font-size: 0.88rem; opacity: 0.8; }
+
+    /* ── Probabilitas ── */
+    .prob-title   { font-weight: 700; color: #374151; font-size: 0.88rem; margin-bottom: 0.75rem; }
+    .prob-row     { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .prob-label   { width: 170px; font-size: 0.8rem; color: #374151;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prob-bar-bg  { flex: 1; background: #e5e7eb; border-radius: 6px; height: 16px; overflow: hidden; }
+    .prob-bar     { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+    .prob-val     { width: 46px; text-align: right; font-size: 0.8rem;
+                    font-weight: 700; color: #1f2937; }
+
+    /* ── Loading ── */
+    #loading { display: none; text-align: center; padding: 1rem; color: #92400e; }
+    .spinner {
+      width: 36px; height: 36px; margin: 0 auto 0.5rem;
+      border: 3px solid #fde68a; border-top-color: #d97706;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: #fee2e2; border: 1px solid #f87171;
+      border-radius: 8px; padding: 1rem; color: #991b1b;
+      font-size: 0.88rem; display: none; margin-top: 0.75rem;
+    }
+
+    #result-img-wrap { text-align: center; margin-bottom: 1rem; }
+    #result-img      { max-width: 160px; border-radius: 10px; border: 2px solid #fde68a; }
+
+    footer { margin-top: 2rem; color: #a8a29e; font-size: 0.8rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🍌 Banana Ripeness Classifier</h1>
+  <p>Klasifikasi tingkat kematangan pisang menggunakan Machine Learning</p>
+  <div class="badges">
+    <span class="badge">KNN</span>
+    <span class="badge">SVM (RBF)</span>
+    <span class="badge">Random Forest</span>
+    <span class="badge">80 Fitur (RGB + HSV + LBP)</span>
+  </div>
+</div>
+
+<!-- Info 3 Kelas -->
+<div class="kelas-info">
+  <div class="kelas-card mentah">
+    <div class="emoji">🟢</div>
+    <div class="name">Mentah</div>
+    <div class="desc">Hijau, keras</div>
+  </div>
+  <div class="kelas-card matang">
+    <div class="emoji">🍌</div>
+    <div class="name">Matang</div>
+    <div class="desc">Kuning, siap makan</div>
+  </div>
+  <div class="kelas-card terlalu">
+    <div class="emoji">🟤</div>
+    <div class="name">Terlalu Matang</div>
+    <div class="desc">Kecoklatan, lembek</div>
+  </div>
+</div>
+
+<!-- Upload -->
+<div class="card">
+  <h2>📁 Upload Gambar Pisang</h2>
+  <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+    <div class="icon">🍌</div>
+    <p><strong>Klik untuk pilih gambar</strong> atau seret ke sini</p>
+    <p style="font-size:0.78rem; margin-top:0.3rem; color:#a8a29e;">JPG, JPEG, PNG</p>
+  </div>
+  <input type="file" id="file-input" accept=".jpg,.jpeg,.png"/>
+  <div id="preview-container">
+    <img id="preview-img" src="" alt="Preview"/>
+    <div id="preview-name"></div>
+  </div>
+</div>
+
+<!-- Pilih Model -->
+<div class="card">
+  <h2>⚙️ Pilih Model & Prediksi</h2>
+  <div class="form-group">
+    <label for="model-select">Model Machine Learning</label>
+    <select id="model-select">
+      {% for name in model_names %}
+      <option value="{{ name }}">{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn-predict" id="btn-predict" onclick="doPredict()">
+    🔍 Prediksi Kematangan
+  </button>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Menganalisis gambar pisang...</p>
+  </div>
+  <div class="error-box" id="error-box"></div>
+</div>
+
+<!-- Hasil -->
+<div class="card" id="result-section">
+  <h2>✅ Hasil Prediksi</h2>
+
+  <div id="result-img-wrap">
+    <img id="result-img" src="" alt="Gambar"/>
+  </div>
+
+  <div class="result-box" id="result-box">
+    <div class="result-label" id="result-model-label">—</div>
+    <div class="result-value" id="result-value">—</div>
+    <div class="result-conf"  id="result-conf"></div>
+  </div>
+
+  <div id="prob-container" style="display:none">
+    <div class="prob-title">📊 Probabilitas per Kelas</div>
+    <div id="prob-bars"></div>
+  </div>
+</div>
+
+<footer>
+  Tugas UAS — Data Science &nbsp;|&nbsp; Banana Ripeness Classifier &nbsp;|&nbsp; Flask
+</footer>
+
+<script>
+  const fileInput   = document.getElementById('file-input');
+  const uploadArea  = document.getElementById('upload-area');
+  const previewCont = document.getElementById('preview-container');
+  const previewImg  = document.getElementById('preview-img');
+  const previewName = document.getElementById('preview-name');
+  const btnPredict  = document.getElementById('btn-predict');
+  const loadingDiv  = document.getElementById('loading');
+  const errorBox    = document.getElementById('error-box');
+  const resultSec   = document.getElementById('result-section');
+
+  uploadArea.addEventListener('dragover',  e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
+
+  function showPreview(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src          = e.target.result;
+      previewName.textContent = file.name;
+      previewCont.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function doPredict() {
+    const file = fileInput.files[0];
+    if (!file) { showError('Silakan pilih gambar pisang terlebih dahulu.'); return; }
+
+    const modelName = document.getElementById('model-select').value;
+    const formData  = new FormData();
+    formData.append('file',  file);
+    formData.append('model', modelName);
+
+    btnPredict.disabled      = true;
+    loadingDiv.style.display = 'block';
+    errorBox.style.display   = 'none';
+    resultSec.style.display  = 'none';
+
+    fetch('/predict', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(data => {
+        loadingDiv.style.display = 'none';
+        btnPredict.disabled      = false;
+        if (data.error) { showError(data.error); return; }
+
+        resultSec.style.display = 'block';
+        document.getElementById('result-img').src =
+          'data:image/jpeg;base64,' + data.image_b64;
+
+        // Warna box sesuai kelas
+        const box = document.getElementById('result-box');
+        box.className = 'result-box';
+        if (data.prediction.includes('Mentah'))         box.classList.add('mentah');
+        else if (data.prediction.includes('Terlalu'))   box.classList.add('terlalu');
+        else                                             box.classList.add('matang');
+
+        document.getElementById('result-model-label').textContent =
+          'Prediksi — ' + data.model_used;
+
+        const label = data.prediction.replace('Banana_', '').replace(/_/g, ' ');
+        document.getElementById('result-value').textContent =
+          getEmoji(data.prediction) + '  ' + label;
+
+        document.getElementById('result-conf').textContent =
+          data.confidence !== null ? 'Confidence: ' + data.confidence + '%' : '';
+
+        // Probabilitas
+        const probCont = document.getElementById('prob-container');
+        const probBars = document.getElementById('prob-bars');
+        probBars.innerHTML = '';
+
+        if (data.all_proba && Object.keys(data.all_proba).length > 0) {
+          probCont.style.display = 'block';
+          for (const [cls, prob] of Object.entries(data.all_proba)) {
+            const isTop    = cls === data.prediction;
+            const barColor = isTop ? getColor(cls) : '#d1d5db';
+            const clsLabel = cls.replace('Banana_', '').replace(/_/g, ' ');
+            probBars.innerHTML += `
+              <div class="prob-row">
+                <div class="prob-label">${getEmoji(cls)} ${clsLabel}</div>
+                <div class="prob-bar-bg">
+                  <div class="prob-bar" style="width:${prob}%; background:${barColor}"></div>
+                </div>
+                <div class="prob-val">${prob}%</div>
+              </div>`;
+          }
+        } else {
+          probCont.style.display = 'none';
+        }
+
+        resultSec.scrollIntoView({ behavior: 'smooth' });
+      })
+      .catch(err => {
+        loadingDiv.style.display = 'none';
+        btnPredict.disabled      = false;
+        showError('Terjadi kesalahan: ' + err.message);
+      });
+  }
+
+  function showError(msg) {
+    errorBox.style.display = 'block';
+    errorBox.textContent   = '❌ ' + msg;
+  }
+
+  function getEmoji(label) {
+    if (label.includes('Terlalu')) return '🟤';
+    if (label.includes('Mentah'))  return '🟢';
+    return '🍌';
+  }
+
+  function getColor(label) {
+    if (label.includes('Terlalu')) return '#7c2d12';
+    if (label.includes('Mentah'))  return '#22c55e';
+    return '#f59e0b';
+  }
+</script>
+</body>
+</html>

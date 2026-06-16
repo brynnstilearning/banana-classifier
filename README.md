@@ -10,7 +10,7 @@
 
 **Sistem klasifikasi kematangan pisang berbasis Machine Learning menggunakan fitur warna dan tekstur**
 
-[🌐 Live Demo](https://banana-classifire-103.up.railway.app) • [📓 Notebook](datascience_UAS_banana.ipynb) • [📄 Laporan](#)
+[🌐 Live Demo](https://banana-classifire-103.up.railway.app) • [📓 Notebook](datascience_UAS_banana.ipynb)
 
 </div>
 
